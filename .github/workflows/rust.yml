@@ -1,0 +1,48 @@
+name: Rust
+
+on:
+  workflow_dispatch
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-runner:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build Runner
+      run: cargo build -p warp-runner --release --target x86_64-unknown-linux-gnu
+    - name: Build Packer
+      run: cargo build -p warp-packer --release --target x86_64-unknown-linux-gnu
+      
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+    - name: Upload runner
+      id: upload-runner-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+        asset_path: target/release/warp-runner
+        asset_name: warp-runner
+        asset_content_type: application/x-executable
+    - name: Upload packer
+      id: upload-packer-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+        asset_path: target/release/warp-packer
+        asset_name: warp-runner
+        asset_content_type: application/x-executable
